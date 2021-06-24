@@ -1,1 +1,9 @@
 .idea
+*.sh
+bin
+bin8bit
+log
+log8bit
+yuv
+yuv8bit
+encoding_code_xx/EncoderAppStatic
