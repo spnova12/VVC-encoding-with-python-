@@ -7,56 +7,39 @@ from os import listdir
 from os.path import join
 import os
 
-"""
-아래와 같이 총 4 조건을 encode 해야된다.
 
-[STF1] 
-22
-24
-32
-34
-42
-19_under
+# 아래와 같이 총 4 조건을 encode 해야된다.
 
-[STF1_]
-19
-27
-29
-37
-39
+# STF_type = 'STF1'
+# qps = [22, 24, 32, 34, 42, '19under']
 
 
-[STF2] (8bit)
-22
-24
-32
-34
-42
-19_under
+# STF_type = 'STF1_'
+# qps = [19, 27, 29, 37, 39]
 
-[STF2] (8bit)
-19
-27
-29
-37
-39
+# # (8bit)
+# STF_type = 'STF2_8bit'
+# qps = [22, 24, 32, 34, 42, '19under']
 
 
-"""
+STF_type = 'STF2_8bit_'
+qps = [19, 27, 29, 37, 39]
+
+
 
 # =============================================================================================================
 # 먼저 병렬로 실행하기 위해 비디오들의 그룹을 만들어준다.
-multi_count = 20
+multi_count = 3
 video_groups = []
 for x in range(multi_count):
     video_groups.append([])
 
-ori_folder_dir = '/hdd1/works/datasets/ssd2/etri/vvc/STF/ori/STF1'
+
+ori_folder_dir = f'/hdd1/works/datasets/ssd2/etri/vvc/STF/ori/{STF_type}'
 
 # YUV imgs in YUV_I420 folder
 ori_dirs = sorted(glob(os.path.join(ori_folder_dir, '*.yuv')))
-
-ori_dirs = ori_dirs[0:1]
+ori_dirs = ori_dirs[:len(ori_dirs)//100]
 
 print("전체 비디오 개수 :", len(ori_dirs))
 
@@ -86,9 +69,10 @@ for i, t in enumerate(video_groups):
 encoder = 'EncoderAppStatic'
 cfg = os.path.abspath('../encoder_intra_vtm_xx.cfg')
 
-my_sh = open(f'RUN_ENC_intra_STF.sh', mode='wt', encoding='utf-8')
+qps = [str(x) for x in qps]
+my_sh = open(f"RUN_ENC_intra_{STF_type}_{'_'.join(qps)}.sh", mode='wt', encoding='utf-8')
 
-encoder_dir = '/hdd1/works/datasets/ssd2/etri/vvc/STF/source'
+outs_dir = '/hdd1/works/datasets/ssd2/etri/vvc/STF/STF_x'
 
 
 for i, video_group in enumerate(video_groups):  # whole 20 video_groups
@@ -105,9 +89,9 @@ for i, video_group in enumerate(video_groups):  # whole 20 video_groups
         #frame_count = int(os.path.getsize(video) * 0.5 / (int(wh[0]) * int(wh[1]) * 1.5))
         frame_count = 1
 
+        # 임의의 수.
         FrameRate = '60'
 
-        qp = 19
 
         def my_encoder(qp):
             n = basename
@@ -124,102 +108,29 @@ for i, video_group in enumerate(video_groups):  # whole 20 video_groups
             my_sh.write(f'\nFramesToBeEncoded={frame_count}')
             my_sh.write(f'\nQP={qp}')
 
-            os.makedirs(f'{encoder_dir}/log{InputBitDepth}/{qp}', exist_ok=True)
-            os.makedirs(f'{encoder_dir}/bin{InputBitDepth}/{qp}', exist_ok=True)
-            os.makedirs(f'{encoder_dir}/yuv{InputBitDepth}/{qp}', exist_ok=True)
-            log =     f"{encoder_dir}/log{InputBitDepth}/{qp}/{nn}_qp{qp}.log"
-            bin_dir = f"{encoder_dir}/bin{InputBitDepth}/{qp}/{nn}_qp{qp}.bin"
-            rec_dir = f"{encoder_dir}/yuv{InputBitDepth}/{qp}/{nn}_qp{qp}.yuv"
+            if qp < 19:
+                qp_d = '19under'
+            else:
+                qp_d = qp
+
+            os.makedirs(f'{outs_dir}/log_{STF_type}/{qp_d}', exist_ok=True)
+            os.makedirs(f'{outs_dir}/bin_{STF_type}/{qp_d}', exist_ok=True)
+            os.makedirs(f'{outs_dir}/yuv_{STF_type}/{qp_d}', exist_ok=True)
+            log =     f"{outs_dir}/log_{STF_type}/{qp_d}/{nn}_qp{qp}.log"
+            bin_dir = f"{outs_dir}/bin_{STF_type}/{qp_d}/{nn}_qp{qp}.bin"
+            rec_dir = f"{outs_dir}/yuv_{STF_type}/{qp_d}/{nn}_qp{qp}.yuv"
 
             my_sh.write(
                 f'\n(cd ${{n}} && ./{encoder} -c {cfg} -c InputBitDepth.cfg -i $InputFile -o {rec_dir} -wdt $wdt -hgt $hgt -f $FramesToBeEncoded -fr {FrameRate} -q $QP> {log} && mv str.bin {bin_dir} && cd .. && rm -r $n);')
 
 
-        # qp = 27
-        # nn = n
-        # my_sh.write(f'\n\n\nn="{n}_qp{qp}"')
-        # my_sh.write(f'\nmkdir ${{n}}')
-        # my_sh.write(f'\ncp {encoder} ${{n}}/{encoder}')
-        # my_sh.write(f'\nchmod 777 ${{n}}/{encoder}')
-        # my_sh.write(f'\necho "InputBitDepth : 10" > ${{n}}/InputBitDepth.cfg')
-        # my_sh.write(f'\nprintf "Level : 6" >> ${{n}}/InputBitDepth.cfg')
-        # my_sh.write(f'\nInputFile="{video}"')
-        # my_sh.write(f'\nwdt={wh[0]}')
-        # my_sh.write(f'\nhgt={wh[1]}')
-        # my_sh.write(f'\nFramesToBeEncoded={frame_count}')
-        # my_sh.write(f'\nQP={qp}')
-        # log = f"/ssd3/etri/vvc/BVI_DVC_OO/AI/log/{nn}_qp{qp}.log"
-        # bin_dir = f"/ssd3/etri/vvc/BVI_DVC_OO/AI/bin/{nn}_qp{qp}.bin"
-        # rec_dir = f'/ssd3/etri/vvc/BVI_DVC_OO/AI/yuv/{nn}_qp{qp}.yuv'
-        #
-        # my_sh.write(
-        #     f'\n(cd ${{n}} && ./{encoder} -c {cfg} -c InputBitDepth.cfg -i $InputFile -o {rec_dir} -wdt $wdt -hgt $hgt -f $FramesToBeEncoded -fr {FrameRate} -q $QP > {log} && mv str.bin {bin_dir} && cd .. && rm -r $n);')
-        #
-        #
-        #
-        #
-        # qp = 32
-        # nn = n
-        # my_sh.write(f'\n\n\nn="{n}_qp{qp}"')
-        # my_sh.write(f'\nmkdir ${{n}}')
-        # my_sh.write(f'\ncp {encoder} ${{n}}/{encoder}')
-        # my_sh.write(f'\nchmod 777 ${{n}}/{encoder}')
-        # my_sh.write(f'\necho "InputBitDepth : 10" > ${{n}}/InputBitDepth.cfg')
-        # my_sh.write(f'\nprintf "Level : 6" >> ${{n}}/InputBitDepth.cfg')
-        # my_sh.write(f'\nInputFile="{video}"')
-        # my_sh.write(f'\nwdt={wh[0]}')
-        # my_sh.write(f'\nhgt={wh[1]}')
-        # my_sh.write(f'\nFramesToBeEncoded={frame_count}')
-        # my_sh.write(f'\nQP={qp}')
-        # log = f"/ssd3/etri/vvc/BVI_DVC_OO/AI/log/{nn}_qp{qp}.log"
-        # bin_dir = f"/ssd3/etri/vvc/BVI_DVC_OO/AI/bin/{nn}_qp{qp}.bin"
-        # rec_dir = f'/ssd3/etri/vvc/BVI_DVC_OO/AI/yuv/{nn}_qp{qp}.yuv'
-        #
-        # my_sh.write(
-        #     f'\n(cd ${{n}} && ./{encoder} -c {cfg} -c InputBitDepth.cfg -i $InputFile -o {rec_dir} -wdt $wdt -hgt $hgt -f $FramesToBeEncoded -fr {FrameRate} -q $QP > {log} && mv str.bin {bin_dir} && cd .. && rm -r $n);')
-        #
-        #
-        #
-        # qp = 37
-        # nn = n
-        # my_sh.write(f'\n\n\nn="{n}_qp{qp}"')
-        # my_sh.write(f'\nmkdir ${{n}}')
-        # my_sh.write(f'\ncp {encoder} ${{n}}/{encoder}')
-        # my_sh.write(f'\nchmod 777 ${{n}}/{encoder}')
-        # my_sh.write(f'\necho "InputBitDepth : 10" > ${{n}}/InputBitDepth.cfg')
-        # my_sh.write(f'\nprintf "Level : 6" >> ${{n}}/InputBitDepth.cfg')
-        # my_sh.write(f'\nInputFile="{video}"')
-        # my_sh.write(f'\nwdt={wh[0]}')
-        # my_sh.write(f'\nhgt={wh[1]}')
-        # my_sh.write(f'\nFramesToBeEncoded={frame_count}')
-        # my_sh.write(f'\nQP={qp}')
-        # log = f"/ssd3/etri/vvc/BVI_DVC_OO/AI/log/{nn}_qp{qp}.log"
-        # bin_dir = f"/ssd3/etri/vvc/BVI_DVC_OO/AI/bin/{nn}_qp{qp}.bin"
-        # rec_dir = f'/ssd3/etri/vvc/BVI_DVC_OO/AI/yuv/{nn}_qp{qp}.yuv'
-        #
-        # my_sh.write(
-        #     f'\n(cd ${{n}} && ./{encoder} -c {cfg} -c InputBitDepth.cfg -i $InputFile -o {rec_dir} -wdt $wdt -hgt $hgt -f $FramesToBeEncoded -fr {FrameRate} -q $QP > {log} && mv str.bin {bin_dir} && cd .. && rm -r $n);')
-        #
-        #
-        # qp = 42
-        # nn = n
-        # my_sh.write(f'\n\n\nn="{n}_qp{qp}"')
-        # my_sh.write(f'\nmkdir ${{n}}')
-        # my_sh.write(f'\ncp {encoder} ${{n}}/{encoder}')
-        # my_sh.write(f'\nchmod 777 ${{n}}/{encoder}')
-        # my_sh.write(f'\necho "InputBitDepth : 10" > ${{n}}/InputBitDepth.cfg')
-        # my_sh.write(f'\nprintf "Level : 6" >> ${{n}}/InputBitDepth.cfg')
-        # my_sh.write(f'\nInputFile="{video}"')
-        # my_sh.write(f'\nwdt={wh[0]}')
-        # my_sh.write(f'\nhgt={wh[1]}')
-        # my_sh.write(f'\nFramesToBeEncoded={frame_count}')
-        # my_sh.write(f'\nQP={qp}')
-        # log = f"/ssd3/etri/vvc/BVI_DVC_OO/AI/log/{nn}_qp{qp}.log"
-        # bin_dir = f"/ssd3/etri/vvc/BVI_DVC_OO/AI/bin/{nn}_qp{qp}.bin"
-        # rec_dir = f'/ssd3/etri/vvc/BVI_DVC_OO/AI/yuv/{nn}_qp{qp}.yuv'
-        #
-        # my_sh.write(
-        #     f'\n(cd ${{n}} && ./{encoder} -c {cfg} -c InputBitDepth.cfg -i $InputFile -o {rec_dir} -wdt $wdt -hgt $hgt -f $FramesToBeEncoded -fr {FrameRate} -q $QP > {log} && mv str.bin {bin_dir} && cd .. && rm -r $n);')
+        random.shuffle(qps)
+        for qp in qps:
+            if qp == '19under':
+                qp = random.randint(1, 18)
+            my_encoder(int(qp))
+
+
 
     # 마지막 끝날때는 & 를 붙이지 않는다.
     if i == multi_count - 1:

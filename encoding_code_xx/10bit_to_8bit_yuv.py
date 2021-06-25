@@ -68,7 +68,7 @@ def read_one_from_yuvs(file_YUV_dir, w, h, start_frame, channel='y', bit=8):
 ##########################################################################################
 ##########################################################################################
 
-folder = '/hdd1/works/datasets/ssd2/etri/vvc/STF/STF/STF2'
+folder = '/hdd1/works/datasets/ssd2/etri/vvc/STF/ori/STF2_'
 yuv_dirs = sorted(glob.glob(f"{folder}/*.yuv"))
 yuv_dirs = yuv_dirs
 
@@ -77,7 +77,7 @@ print('imagePaths_total :', len(yuv_dirs))
 
 #########################################
 
-eight_bit_dir = f'../../STF/STF2_8bit'
+eight_bit_dir = f'../../ori/STF2_8bit_'
 os.makedirs(f'{eight_bit_dir}', exist_ok=True)
 
 
