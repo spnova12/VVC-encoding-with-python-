@@ -62,7 +62,7 @@ def multi_proc_scheduler(myworks, my_preprocess, cpu_count, backup=True):
 if __name__ == "__main__":
     ########################################################################################
     ########################################################################################
-    my_cpu_count = 20
+    my_cpu_count = cpu_count()
     print(f">> cpu usage (mycpu/total): {my_cpu_count}/{cpu_count()}")
 
     ########################################################################################
@@ -76,11 +76,11 @@ if __name__ == "__main__":
     # qps = [19, 27, 29, 37, 39]
 
     # # (8bit)
-    STF_type = 'STF2_8bit'
-    qps = [22, 24, 32, 34, 42, '19under']
+    # STF_type = 'STF2_8bit'
+    # qps = [22, 24, 32, 34, 42, '19under']
 
-    # STF_type = 'STF2_8bit_'
-    # qps = [19, 27, 29, 37, 39]
+    STF_type = 'STF2_8bit_'
+    qps = [19, 27, 29, 37, 39]
 
     ori_folder_dir = os.path.abspath(f'../../ori/{STF_type}')
 
